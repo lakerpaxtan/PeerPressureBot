@@ -110,7 +110,7 @@ async def submit_to_goal(message):
             await goal_thread.thread.send("You aren't a member bro... you can't submit")
             return
 
-        await goal_thread.thread.send(f"Received submission from {submitting_member.name}... confirming with others")
+        await goal_thread.thread.send(f"Received submission from {submitting_member.name}... waiting on confirmation from others")
         await confirm_submission(goal_thread, submitting_member, message_text, message_attachments)
 
 
@@ -134,6 +134,7 @@ async def confirm_submission(goal_thread, submitting_member, message_text, messa
     # ========================================================================================
     total_members = len(goal_thread.members)
     submitting_member_object = goal_thread.members[submitting_member.id]
+    submitting_member_object["votes"] = 0.0
     if submitting_member_object["confirmed"] is True:
         await goal_thread.thread.send(f"HEY! You've already been confirmed. "
                                       f"Stop trying to submit {submitting_member.name}")
@@ -154,7 +155,8 @@ async def confirm_submission(goal_thread, submitting_member, message_text, messa
 
 async def wait_for_response(msg, member_sent_to, goal_thread, submitting_member):
     def reaction_check(reaction, user):
-        return msg == reaction.message and (str(reaction.emoji) == '👍' or str(reaction.emoji) == '👎')
+        return msg == reaction.message and (str(reaction.emoji) == '👍' or str(reaction.emoji) == '👎') \
+               and user.name != 'PeerPressureBoiBot'
     try:
         reaction, user = await client.wait_for('reaction_add', timeout=1200, check=reaction_check)
         LOGGER.info(f"received response to confirmation from {user} with {reaction}")
@@ -195,7 +197,7 @@ async def create_goal_thread_from_input(message):
 async def add_member_to_goal(message, member_object):
     if message.channel in GoalThread.thread_to_object.keys():
         goal_thread = GoalThread.thread_to_object[message.channel]
-        await goal_thread.thread.send(f'Added new member {member_object.name} to this thing')
+        await goal_thread.thread.send(f'Added new member {member_object.name}')
         goal_thread.add_member(member_object)
         asyncio.create_task(shame_member(member_object, goal_thread, goal_thread.end_time))
 
